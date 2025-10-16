@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 
 // Import all form components
+import PersonalInfoForm from '../components/forms/PersonalInfoForm'
 import JournalsForm from '../components/forms/JournalsForm'
 import ConferencesForm from '../components/forms/ConferencesForm'
 import BooksForm from '../components/forms/BooksForm'
@@ -20,8 +21,10 @@ export default function FacultyForm() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [updating, setUpdating] = useState(false)
   const [user, setUser] = useState(null)
   const [facultyId, setFacultyId] = useState(null)
+  const [personalDetailsId, setPersonalDetailsId] = useState(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [completedSteps, setCompletedSteps] = useState([])
@@ -38,25 +41,19 @@ export default function FacultyForm() {
       }
     }
     return {
-      // Personal Information - Extended
+      // Faculty Profile fields
       title: '', fullName: '', firstName: '', lastName: '', dateOfBirth: '', gender: '',
       mobileNumber: '', email: '', address: '', district: '', state: '', pinNo: '',
+      designation: '', department: '', school: '', organisation: '', organisationType: '',
+      organisationUrl: '', workingFromMonth: '', workingFromYear: '',
+      wosSubjectCode: '', wosSubject: '', expertiseCode: '', expertise: '', briefExpertise: '',
       
-      // Academic Details (moved to Personal Info as per requirements)
+      // Personal Details table fields
       ugSpecialization: '', pgSpecialization: '', phdSpecialization: '', phdCompletedYear: '',
       pdfSpecialization: '', guideshipDetails: '', pursuingPhdDetails: '', fundedProjects: '',
-      
-      // Professional Information
-      designation: '', department: '', school: '', organisation: '', organisationType: '',
-      organisationUrl: '', workingFromMonth: '', workingFromYear: '', experienceYears: '',
-      
-      // Research Identifiers (moved to Personal Info)
-      vidwanId: '', cmritIrinsProfileLink: '', orcidId: '', scopusId: '', 
-      researcherId: '', googleScholarId: '', microsoftAcademicId: '',
-      
-      // Additional Details
-      wosSubjectCode: '', wosSubject: '', expertiseCode: '', expertise: '', 
-      briefExpertise: '', editorialMember: '', professionalBodyMemberships: '',
+      experienceYears: '', editorialMember: '', professionalBodyMemberships: '',
+      vidwanId: '', cmritIrinsLink: '', orcidLink: '', scopusLink: '', 
+      researcherLink: '', googleScholarLink: '',
     }
   })
 
@@ -102,6 +99,7 @@ export default function FacultyForm() {
 
   const loadExistingData = async (userId) => {
     try {
+      // Load faculty profile
       const { data: facultyData } = await supabase
         .from('faculty_profile')
         .select('*')
@@ -113,33 +111,67 @@ export default function FacultyForm() {
         setIsEditMode(true)
         toast.success('📝 Editing existing profile', { duration: 3000 })
         
+        // Load personal details from separate table
+        const { data: personalData } = await supabase
+          .from('personal_details')
+          .select('*')
+          .eq('faculty_id', facultyData.id)
+          .single()
+
+        if (personalData) {
+          setPersonalDetailsId(personalData.id)
+        }
+
+        // Combine data from both tables
         setFormData({
-          title: facultyData.title || '', fullName: facultyData.full_name || '',
-          firstName: facultyData.first_name || '', lastName: facultyData.last_name || '',
-          dateOfBirth: facultyData.date_of_birth || '', gender: facultyData.gender || '',
-          mobileNumber: facultyData.mobile_number || '', email: facultyData.email || '',
-          address: facultyData.address || '', district: facultyData.district || '',
-          state: facultyData.state || '', pinNo: facultyData.pin_no || '',
-          designation: facultyData.designation || '', department: facultyData.department || '',
-          school: facultyData.school || '', organisation: facultyData.organisation || '',
-          organisationType: facultyData.organisation_type || '', organisationUrl: facultyData.organisation_url || '',
-          workingFromMonth: facultyData.working_from_month || '', workingFromYear: facultyData.working_from_year || '',
-          orcidId: facultyData.orcid_id || '', researcherId: facultyData.researcher_id || '',
-          scopusId: facultyData.scopus_id || '', googleScholarId: facultyData.google_scholar_id || '',
-          microsoftAcademicId: facultyData.microsoft_academic_id || '', vidwanId: facultyData.vidwan_id || '',
-          cmritIrinsProfileLink: facultyData.cmrit_irins_profile_link || '',
-          wosSubjectCode: facultyData.wos_subject_code || '', wosSubject: facultyData.wos_subject || '',
-          expertiseCode: facultyData.expertise_code || '', expertise: facultyData.expertise || '',
+          // From faculty_profile
+          title: facultyData.title || '',
+          fullName: facultyData.full_name || '',
+          firstName: facultyData.first_name || '',
+          lastName: facultyData.last_name || '',
+          dateOfBirth: facultyData.date_of_birth || '',
+          gender: facultyData.gender || '',
+          mobileNumber: facultyData.mobile_number || '',
+          email: facultyData.email || '',
+          address: facultyData.address || '',
+          district: facultyData.district || '',
+          state: facultyData.state || '',
+          pinNo: facultyData.pin_no || '',
+          designation: facultyData.designation || '',
+          department: facultyData.department || '',
+          school: facultyData.school || '',
+          organisation: facultyData.organisation || '',
+          organisationType: facultyData.organisation_type || '',
+          organisationUrl: facultyData.organisation_url || '',
+          workingFromMonth: facultyData.working_from_month || '',
+          workingFromYear: facultyData.working_from_year || '',
+          wosSubjectCode: facultyData.wos_subject_code || '',
+          wosSubject: facultyData.wos_subject || '',
+          expertiseCode: facultyData.expertise_code || '',
+          expertise: facultyData.expertise || '',
           briefExpertise: facultyData.brief_expertise || '',
-          ugSpecialization: facultyData.ug_specialization || '', pgSpecialization: facultyData.pg_specialization || '',
-          phdSpecialization: facultyData.phd_specialization || '', phdCompletedYear: facultyData.phd_completed_year || '',
-          pdfSpecialization: facultyData.pdf_specialization || '', guideshipDetails: facultyData.guideship_details || '',
-          pursuingPhdDetails: facultyData.pursuing_phd_details || '', fundedProjects: facultyData.funded_projects || '',
-          experienceYears: facultyData.experience_years || '', editorialMember: facultyData.editorial_member || '',
-          professionalBodyMemberships: facultyData.professional_body_memberships || '',
+          
+          // From personal_details table
+          ugSpecialization: personalData?.ug_specialization || '',
+          pgSpecialization: personalData?.pg_specialization || '',
+          phdSpecialization: personalData?.phd_specialization || '',
+          phdCompletedYear: personalData?.phd_completed_year || '',
+          pdfSpecialization: personalData?.pdf_specialization || '',
+          guideshipDetails: personalData?.guideship_details || '',
+          pursuingPhdDetails: personalData?.pursuing_phd_details || '',
+          fundedProjects: personalData?.funded_projects || '',
+          experienceYears: personalData?.experience_years || '',
+          editorialMember: personalData?.editorial_member || '',
+          professionalBodyMemberships: personalData?.professional_body_memberships || '',
+          vidwanId: personalData?.vidwan_id || '',
+          cmritIrinsLink: personalData?.cmrit_irins_link || '',
+          orcidLink: personalData?.orcid_link || '',
+          scopusLink: personalData?.scopus_link || '',
+          researcherLink: personalData?.researcher_link || '',
+          googleScholarLink: personalData?.google_scholar_link || '',
         })
 
-        // Load additional sections
+        // Load publications and other data
         const loadPromises = [
           supabase.from('journals').select('*').eq('faculty_id', facultyData.id),
           supabase.from('conferences').select('*').eq('faculty_id', facultyData.id),
@@ -162,7 +194,6 @@ export default function FacultyForm() {
         setCourseraNCourses(coursera)
         setNptelCourses(nptel)
 
-        // Mark completed steps
         updateCompletedSteps()
       }
     } catch (error) {
@@ -176,7 +207,7 @@ export default function FacultyForm() {
     if (formData.firstName && formData.email && formData.mobileNumber) completed.push(1)
     if (formData.ugSpecialization || formData.pgSpecialization) completed.push(2)
     if (formData.designation && formData.department) completed.push(3)
-    if (formData.orcidId || formData.scopusId) completed.push(4)
+    if (formData.orcidLink || formData.scopusLink) completed.push(4)
     if (formData.expertise) completed.push(5)
     if (journals.length > 0) completed.push(6)
     if (conferences.length > 0) completed.push(7)
@@ -242,6 +273,190 @@ export default function FacultyForm() {
     }
   }
 
+  // Build faculty profile payload
+  const buildFacultyProfilePayload = () => {
+    return {
+      title: formData.title || null,
+      full_name: formData.fullName || null,
+      first_name: formData.firstName || null,
+      last_name: formData.lastName || null,
+      date_of_birth: formData.dateOfBirth || null,
+      gender: formData.gender || null,
+      mobile_number: formData.mobileNumber || null,
+      email: formData.email || null,
+      address: formData.address || null,
+      district: formData.district || null,
+      state: formData.state || null,
+      pin_no: formData.pinNo || null,
+      designation: formData.designation || null,
+      department: formData.department || null,
+      school: formData.school || null,
+      organisation: formData.organisation || null,
+      organisation_type: formData.organisationType || null,
+      organisation_url: formData.organisationUrl || null,
+      working_from_month: formData.workingFromMonth || null,
+      working_from_year: formData.workingFromYear || null,
+      wos_subject_code: formData.wosSubjectCode || null,
+      wos_subject: formData.wosSubject || null,
+      expertise_code: formData.expertiseCode || null,
+      expertise: formData.expertise || null,
+      brief_expertise: formData.briefExpertise || null,
+    }
+  }
+
+  // Build personal details payload
+  const buildPersonalDetailsPayload = (facultyId) => {
+    return {
+      faculty_id: facultyId,
+      ug_specialization: formData.ugSpecialization || null,
+      pg_specialization: formData.pgSpecialization || null,
+      phd_specialization: formData.phdSpecialization || null,
+      phd_completed_year: formData.phdCompletedYear || null,
+      pdf_specialization: formData.pdfSpecialization || null,
+      guideship_details: formData.guideshipDetails || null,
+      pursuing_phd_details: formData.pursuingPhdDetails || null,
+      funded_projects: formData.fundedProjects || null,
+      editorial_member: formData.editorialMember || null,
+      experience_years: formData.experienceYears || null,
+      vidwan_id: formData.vidwanId || null,
+      cmrit_irins_link: formData.cmritIrinsLink || null,
+      orcid_link: formData.orcidLink || null,
+      scopus_link: formData.scopusLink || null,
+      researcher_link: formData.researcherLink || null,
+      google_scholar_link: formData.googleScholarLink || null,
+      professional_body_memberships: formData.professionalBodyMemberships || null,
+    }
+  }
+
+  // Handle Update Current Step
+  const handleUpdateCurrentStep = async () => {
+    if (!validateStep(currentStep)) {
+      toast.error('Please fill all required fields', { duration: 3000 })
+      return
+    }
+
+    setUpdating(true)
+    const loadingToast = toast.loading('Updating current step...')
+
+    try {
+      let currentFacultyId = facultyId
+
+      // Save faculty profile
+      if (isEditMode && facultyId) {
+        const { error } = await supabase.from('faculty_profile').update({
+          ...buildFacultyProfilePayload(),
+          updated_at: new Date().toISOString()
+        }).eq('id', facultyId)
+        
+        if (error) throw error
+      } else {
+        const { data: profileData, error: profileError } = await supabase
+          .from('faculty_profile')
+          .insert([{ ...buildFacultyProfilePayload(), user_id: user.id }])
+          .select()
+
+        if (profileError) throw profileError
+        currentFacultyId = profileData[0].id
+        setFacultyId(currentFacultyId)
+        setIsEditMode(true)
+      }
+
+      // Save personal details to separate table
+      const personalDetailsPayload = buildPersonalDetailsPayload(currentFacultyId)
+      
+      if (personalDetailsId) {
+        // Update existing personal details
+        const { error } = await supabase
+          .from('personal_details')
+          .update({
+            ...personalDetailsPayload,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', personalDetailsId)
+        
+        if (error) throw error
+      } else {
+        // Insert new personal details
+        const { data, error } = await supabase
+          .from('personal_details')
+          .insert([personalDetailsPayload])
+          .select()
+        
+        if (error) throw error
+        if (data && data[0]) {
+          setPersonalDetailsId(data[0].id)
+        }
+      }
+
+      if (currentStep >= 6) {
+        await saveAdditionalSectionsForStep(currentFacultyId, currentStep)
+      }
+
+      if (!completedSteps.includes(currentStep)) {
+        setCompletedSteps([...completedSteps, currentStep])
+      }
+
+      toast.dismiss(loadingToast)
+      toast.success(`✅ Step ${currentStep} updated successfully!`, { duration: 3000 })
+
+      if (currentStep < totalSteps) {
+        setTimeout(() => {
+          setCurrentStep(prev => prev + 1)
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }, 500)
+      }
+
+    } catch (error) {
+      console.error('Error updating step:', error)
+      toast.dismiss(loadingToast)
+      toast.error(`❌ Update failed: ${error.message}`, { duration: 4000 })
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const saveAdditionalSectionsForStep = async (facultyId, step) => {
+    if (isEditMode) {
+      if (step === 6) await supabase.from('journals').delete().eq('faculty_id', facultyId)
+      if (step === 7) await supabase.from('conferences').delete().eq('faculty_id', facultyId)
+      if (step === 8) await supabase.from('books').delete().eq('faculty_id', facultyId)
+      if (step === 9) {
+        await supabase.from('awards').delete().eq('faculty_id', facultyId)
+        await supabase.from('patents').delete().eq('faculty_id', facultyId)
+      }
+      if (step === 10) await supabase.from('online_certifications').delete().eq('faculty_id', facultyId)
+    }
+
+    const insertPromises = []
+    if (step === 6 && journals.length > 0) {
+      insertPromises.push(supabase.from('journals').insert(journals.map(j => ({ ...j, faculty_id: facultyId }))))
+    }
+    if (step === 7 && conferences.length > 0) {
+      insertPromises.push(supabase.from('conferences').insert(conferences.map(c => ({ ...c, faculty_id: facultyId }))))
+    }
+    if (step === 8 && books.length > 0) {
+      insertPromises.push(supabase.from('books').insert(books.map(b => ({ ...b, faculty_id: facultyId }))))
+    }
+    if (step === 9) {
+      if (awards.length > 0) {
+        insertPromises.push(supabase.from('awards').insert(awards.map(a => ({ ...a, faculty_id: facultyId }))))
+      }
+      if (patents.length > 0) {
+        insertPromises.push(supabase.from('patents').insert(patents.map(p => ({ ...p, faculty_id: facultyId }))))
+      }
+    }
+    if (step === 10) {
+      const allCertifications = [...courseraNCourses, ...nptelCourses]
+      if (allCertifications.length > 0) {
+        insertPromises.push(supabase.from('online_certifications').insert(allCertifications.map(c => ({ ...c, faculty_id: facultyId }))))
+      }
+    }
+
+    if (insertPromises.length > 0) {
+      await Promise.all(insertPromises)
+    }
+  }
+
   const handleSubmit = async () => {
     if (currentStep !== totalSteps) {
       toast.error('Please complete all steps before submitting', { duration: 3000 })
@@ -256,43 +471,40 @@ export default function FacultyForm() {
     try {
       let currentFacultyId = facultyId
 
-      const profilePayload = {
-        title: formData.title, full_name: formData.fullName, first_name: formData.firstName,
-        last_name: formData.lastName, date_of_birth: formData.dateOfBirth, gender: formData.gender,
-        mobile_number: formData.mobileNumber, email: formData.email, address: formData.address,
-        district: formData.district, state: formData.state, pin_no: formData.pinNo,
-        designation: formData.designation, department: formData.department, school: formData.school,
-        organisation: formData.organisation, organisation_type: formData.organisationType,
-        organisation_url: formData.organisationUrl, working_from_month: formData.workingFromMonth,
-        working_from_year: formData.workingFromYear, orcid_id: formData.orcidId,
-        researcher_id: formData.researcherId, scopus_id: formData.scopusId,
-        google_scholar_id: formData.googleScholarId, microsoft_academic_id: formData.microsoftAcademicId,
-        vidwan_id: formData.vidwanId, cmrit_irins_profile_link: formData.cmritIrinsProfileLink,
-        wos_subject_code: formData.wosSubjectCode, wos_subject: formData.wosSubject,
-        expertise_code: formData.expertiseCode, expertise: formData.expertise,
-        brief_expertise: formData.briefExpertise,
-        ug_specialization: formData.ugSpecialization, pg_specialization: formData.pgSpecialization,
-        phd_specialization: formData.phdSpecialization, phd_completed_year: formData.phdCompletedYear,
-        pdf_specialization: formData.pdfSpecialization, guideship_details: formData.guideshipDetails,
-        pursuing_phd_details: formData.pursuingPhdDetails, funded_projects: formData.fundedProjects,
-        experience_years: formData.experienceYears, editorial_member: formData.editorialMember,
-        professional_body_memberships: formData.professionalBodyMemberships,
-      }
-
+      // Save faculty profile
       if (isEditMode && facultyId) {
-        await supabase.from('faculty_profile').update({
-          ...profilePayload,
+        const { error } = await supabase.from('faculty_profile').update({
+          ...buildFacultyProfilePayload(),
           updated_at: new Date().toISOString()
         }).eq('id', facultyId)
+        
+        if (error) throw error
       } else {
         const { data: profileData, error: profileError } = await supabase
           .from('faculty_profile')
-          .insert([{ ...profilePayload, user_id: user.id }])
+          .insert([{ ...buildFacultyProfilePayload(), user_id: user.id }])
           .select()
 
         if (profileError) throw profileError
         currentFacultyId = profileData[0].id
         setFacultyId(currentFacultyId)
+      }
+
+      // Save personal details
+      const personalDetailsPayload = buildPersonalDetailsPayload(currentFacultyId)
+      
+      if (personalDetailsId) {
+        await supabase
+          .from('personal_details')
+          .update({
+            ...personalDetailsPayload,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', personalDetailsId)
+      } else {
+        await supabase
+          .from('personal_details')
+          .insert([personalDetailsPayload])
       }
 
       await saveAdditionalSections(currentFacultyId)
@@ -340,7 +552,9 @@ export default function FacultyForm() {
       insertPromises.push(supabase.from('online_certifications').insert(allCertifications.map(c => ({ ...c, faculty_id: facultyId }))))
     }
 
-    await Promise.all(insertPromises)
+    if (insertPromises.length > 0) {
+      await Promise.all(insertPromises)
+    }
   }
 
   const steps = [
@@ -373,9 +587,8 @@ export default function FacultyForm() {
       <div className="lg:pl-64 transition-all duration-300">
         <Navbar user={user} onLogout={handleLogout} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <main className="p-6">
+        <main className="p-4 sm:p-6">
           <div className="max-w-6xl mx-auto">
-            {/* Header */}
             <div className="mb-6">
               <button onClick={() => navigate('/dashboard')} className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -383,35 +596,35 @@ export default function FacultyForm() {
                 </svg>
                 Back to Dashboard
               </button>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
                 ✏️ {isEditMode ? 'Update' : 'Create'} Faculty Profile
               </h1>
-              <p className="text-gray-600 mt-2">Complete your profile information step by step</p>
+              <p className="text-gray-600 mt-2 text-sm sm:text-base">Complete your profile information step by step</p>
             </div>
 
             {isEditMode && (
               <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-lg flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
                 </svg>
                 <p className="text-sm text-blue-800 font-medium">📌 Updating existing profile</p>
               </div>
             )}
 
-            {/* Progress Stepper - Clickable */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-4">
+            {/* Progress Stepper and Form - keeping existing UI structure */}
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 overflow-x-auto">
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-4 min-w-max sm:min-w-0">
                 {steps.map((step) => (
                   <button
                     key={step.number}
                     onClick={() => goToStep(step.number)}
-                    className={`flex flex-col items-center p-3 rounded-lg transition-all ${
+                    className={`flex flex-col items-center p-2 sm:p-3 rounded-lg transition-all ${
                       currentStep === step.number 
                         ? 'bg-blue-100 ring-2 ring-blue-600' 
                         : 'hover:bg-gray-100'
                     }`}
                   >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold transition-all relative ${
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl font-bold transition-all relative ${
                       currentStep === step.number
                         ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white scale-110'
                         : completedSteps.includes(step.number)
@@ -430,16 +643,15 @@ export default function FacultyForm() {
               </div>
             </div>
 
-            {/* Step Counter */}
             <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Current Step</p>
-                  <p className="text-2xl font-bold text-blue-600">Step {currentStep} of {totalSteps}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-700">Current Step</p>
+                  <p className="text-xl sm:text-2xl font-bold text-blue-600">Step {currentStep} of {totalSteps}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-700">Progress</p>
-                  <p className="text-2xl font-bold text-green-600">{Math.round((currentStep / totalSteps) * 100)}%</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-700">Progress</p>
+                  <p className="text-xl sm:text-2xl font-bold text-green-600">{Math.round((currentStep / totalSteps) * 100)}%</p>
                 </div>
               </div>
               <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
@@ -450,284 +662,41 @@ export default function FacultyForm() {
               </div>
             </div>
 
-            {/* Form Content */}
-            <div className="bg-white rounded-xl shadow-sm p-8">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-8">
               <form onSubmit={(e) => e.preventDefault()}>
                 
-                {/* Step 1: Personal Information - EXTENDED */}
                 {currentStep === 1 && (
-                  <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                      <span className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center">🎓</span>
-                      Personal Information
-                    </h2>
-                    
-                    {/* Basic Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                        <select name="title" value={formData.title} onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                          <option value="">Select</option>
-                          {['Dr', 'Mr', 'Ms', 'Mrs', 'Prof'].map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                          Full Name <span className="text-red-500">*</span>
-                        </label>
-                        <input type="text" id="fullName" name="fullName" value={formData.fullName} onChange={handleChange}
-                          placeholder="Enter full name"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                          First Name <span className="text-red-500">*</span>
-                        </label>
-                        <input type="text" id="firstName" name="firstName" value={formData.firstName} onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
-                        {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
-                      </div>
-                      <div>
-                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                        <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
-                          Date of Birth <span className="text-red-500">*</span>
-                        </label>
-                        <input type="date" id="dateOfBirth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
-                        {errors.dateOfBirth && <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                        <select name="gender" value={formData.gender} onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                          <option value="">Select</option>
-                          {['Male', 'Female', 'Other'].map(g => <option key={g} value={g}>{g}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                          Mobile Number <span className="text-red-500">*</span>
-                        </label>
-                        <input type="tel" id="mobileNumber" name="mobileNumber" value={formData.mobileNumber} onChange={handleChange}
-                          placeholder="+91 9876543210"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
-                        {errors.mobileNumber && <p className="mt-1 text-sm text-red-600">{errors.mobileNumber}</p>}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address <span className="text-red-500">*</span>
-                      </label>
-                      <input type="email" id="email" name="email" value={formData.email} onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
-                      {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                    </div>
-
-                    <div>
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                      <textarea id="address" name="address" value={formData.address} onChange={handleChange} rows="2"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        placeholder="Enter full address"></textarea>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-2">District</label>
-                        <input type="text" id="district" name="district" value={formData.district} onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                      <div>
-                        <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                        <input type="text" id="state" name="state" value={formData.state} onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                      <div>
-                        <label htmlFor="pinNo" className="block text-sm font-medium text-gray-700 mb-2">Pin Code</label>
-                        <input type="text" id="pinNo" name="pinNo" value={formData.pinNo} onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                    </div>
-
-                    {/* Academic Qualifications */}
-                    <div className="border-t-2 border-gray-200 pt-6 mt-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-4">Academic Qualifications</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label htmlFor="ugSpecialization" className="block text-sm font-medium text-gray-700 mb-2">UG Specialization</label>
-                          <input type="text" id="ugSpecialization" name="ugSpecialization" value={formData.ugSpecialization} onChange={handleChange}
-                            placeholder="e.g., B.E in Computer Science"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="pgSpecialization" className="block text-sm font-medium text-gray-700 mb-2">PG Specialization</label>
-                          <input type="text" id="pgSpecialization" name="pgSpecialization" value={formData.pgSpecialization} onChange={handleChange}
-                            placeholder="e.g., M.Tech in AI & ML"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="phdSpecialization" className="block text-sm font-medium text-gray-700 mb-2">PhD Specialization</label>
-                            <input type="text" id="phdSpecialization" name="phdSpecialization" value={formData.phdSpecialization} onChange={handleChange}
-                              placeholder="e.g., Machine Learning"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                          </div>
-                          <div>
-                            <label htmlFor="phdCompletedYear" className="block text-sm font-medium text-gray-700 mb-2">PhD Completion Year</label>
-                            <input type="number" id="phdCompletedYear" name="phdCompletedYear" value={formData.phdCompletedYear} onChange={handleChange}
-                              placeholder="2020"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label htmlFor="pdfSpecialization" className="block text-sm font-medium text-gray-700 mb-2">PDF (Post-Doctoral Fellowship) Specialization</label>
-                          <input type="text" id="pdfSpecialization" name="pdfSpecialization" value={formData.pdfSpecialization} onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="guideshipDetails" className="block text-sm font-medium text-gray-700 mb-2">Guideship Details</label>
-                          <textarea id="guideshipDetails" name="guideshipDetails" value={formData.guideshipDetails} onChange={handleChange} rows="2"
-                            placeholder="Details about students guided for PhD/M.Tech"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-                        </div>
-
-                        <div>
-                          <label htmlFor="pursuingPhdDetails" className="block text-sm font-medium text-gray-700 mb-2">Pursuing PhD Details</label>
-                          <textarea id="pursuingPhdDetails" name="pursuingPhdDetails" value={formData.pursuingPhdDetails} onChange={handleChange} rows="2"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-                        </div>
-
-                        <div>
-                          <label htmlFor="fundedProjects" className="block text-sm font-medium text-gray-700 mb-2">Funded Projects</label>
-                          <textarea id="fundedProjects" name="fundedProjects" value={formData.fundedProjects} onChange={handleChange} rows="2"
-                            placeholder="List of funded research projects"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Experience & Memberships */}
-                    <div className="border-t-2 border-gray-200 pt-6 mt-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-4">Professional Experience</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label htmlFor="experienceYears" className="block text-sm font-medium text-gray-700 mb-2">Total Experience (in years)</label>
-                          <input type="number" id="experienceYears" name="experienceYears" value={formData.experienceYears} onChange={handleChange}
-                            placeholder="15"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="editorialMember" className="block text-sm font-medium text-gray-700 mb-2">Editorial Memberships</label>
-                          <input type="text" id="editorialMember" name="editorialMember" value={formData.editorialMember} onChange={handleChange}
-                            placeholder="Journal names where you are an editorial member"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="professionalBodyMemberships" className="block text-sm font-medium text-gray-700 mb-2">Professional Body Memberships</label>
-                          <textarea id="professionalBodyMemberships" name="professionalBodyMemberships" value={formData.professionalBodyMemberships} onChange={handleChange} rows="2"
-                            placeholder="e.g., IEEE, ACM, CSI"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Research Profile Links */}
-                    <div className="border-t-2 border-gray-200 pt-6 mt-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-4">Research Profile Links</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label htmlFor="vidwanId" className="block text-sm font-medium text-gray-700 mb-2">Vidwan ID</label>
-                          <input type="text" id="vidwanId" name="vidwanId" value={formData.vidwanId} onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="cmritIrinsProfileLink" className="block text-sm font-medium text-gray-700 mb-2">CMRIT IRINS Profile Link</label>
-                          <input type="url" id="cmritIrinsProfileLink" name="cmritIrinsProfileLink" value={formData.cmritIrinsProfileLink} onChange={handleChange}
-                            placeholder="https://"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="orcidId" className="block text-sm font-medium text-gray-700 mb-2">ORCID ID Link</label>
-                          <input type="url" id="orcidId" name="orcidId" value={formData.orcidId} onChange={handleChange}
-                            placeholder="https://orcid.org/0000-0000-0000-0000"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="scopusId" className="block text-sm font-medium text-gray-700 mb-2">SCOPUS ID Link</label>
-                          <input type="url" id="scopusId" name="scopusId" value={formData.scopusId} onChange={handleChange}
-                            placeholder="https://"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="researcherId" className="block text-sm font-medium text-gray-700 mb-2">Researcher ID Link</label>
-                          <input type="url" id="researcherId" name="researcherId" value={formData.researcherId} onChange={handleChange}
-                            placeholder="https://"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div>
-                          <label htmlFor="googleScholarId" className="block text-sm font-medium text-gray-700 mb-2">Google Scholar Profile Link</label>
-                          <input type="url" id="googleScholarId" name="googleScholarId" value={formData.googleScholarId} onChange={handleChange}
-                            placeholder="https://scholar.google.com/"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <PersonalInfoForm 
+                    formData={formData} 
+                    handleChange={handleChange} 
+                    errors={errors}
+                  />
                 )}
 
-                {/* Remaining steps stay the same as before... */}
-                
-                {/* Step 2 */}
                 {currentStep === 2 && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                      <span className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center">🎓</span>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                      <span className="w-8 h-8 sm:w-10 sm:h-10 bg-green-600 text-white rounded-full flex items-center justify-center text-lg sm:text-xl">🎓</span>
                       Academic Details (Optional)
                     </h2>
-                    <p className="text-gray-600">Most academic details are already captured in Personal Information. Add any additional information here.</p>
+                    <p className="text-gray-600 text-sm sm:text-base">Most academic details are already captured in Personal Information. Add any additional information here if needed.</p>
                   </div>
                 )}
 
-                {/* Step 3: Professional */}
                 {currentStep === 3 && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                      <span className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center">💼</span>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                      <span className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-600 text-white rounded-full flex items-center justify-center text-lg sm:text-xl">💼</span>
                       Professional Details
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <div>
                         <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-2">
                           Designation <span className="text-red-500">*</span>
                         </label>
                         <input type="text" id="designation" name="designation" value={formData.designation} onChange={handleChange}
                           placeholder="e.g., Associate Professor"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" required />
+                          className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm sm:text-base" required />
                         {errors.designation && <p className="mt-1 text-sm text-red-600">{errors.designation}</p>}
                       </div>
                       <div>
@@ -736,53 +705,37 @@ export default function FacultyForm() {
                         </label>
                         <input type="text" id="department" name="department" value={formData.department} onChange={handleChange}
                           placeholder="e.g., Computer Science"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" required />
+                          className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm sm:text-base" required />
                         {errors.department && <p className="mt-1 text-sm text-red-600">{errors.department}</p>}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label htmlFor="school" className="block text-sm font-medium text-gray-700 mb-2">School</label>
-                        <input type="text" id="school" name="school" value={formData.school} onChange={handleChange}
-                          placeholder="e.g., School of Engineering"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" />
-                      </div>
-                      <div>
-                        <label htmlFor="organisation" className="block text-sm font-medium text-gray-700 mb-2">Organisation</label>
-                        <input type="text" id="organisation" name="organisation" value={formData.organisation} onChange={handleChange}
-                          placeholder="e.g., CMRIT"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" />
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Step 4-10 - Use existing component imports */}
                 {currentStep === 4 && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Research Identifiers (Already in Personal Info)</h2>
-                    <p className="text-gray-600">Research IDs are already captured in the Personal Information section.</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Research Identifiers (Already in Personal Info)</h2>
+                    <p className="text-gray-600 text-sm sm:text-base">Research IDs are already captured in the Personal Information section.</p>
                   </div>
                 )}
 
                 {currentStep === 5 && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                      <span className="w-10 h-10 bg-orange-600 text-white rounded-full flex items-center justify-center">📝</span>
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                      <span className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-600 text-white rounded-full flex items-center justify-center text-lg sm:text-xl">📝</span>
                       Expertise Details
                     </h2>
                     <div>
                       <label htmlFor="expertise" className="block text-sm font-medium text-gray-700 mb-2">Expertise</label>
                       <input type="text" id="expertise" name="expertise" value={formData.expertise} onChange={handleChange}
                         placeholder="e.g., Machine Learning, AI"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" />
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm sm:text-base" />
                     </div>
                     <div>
                       <label htmlFor="briefExpertise" className="block text-sm font-medium text-gray-700 mb-2">Brief Expertise</label>
                       <textarea id="briefExpertise" name="briefExpertise" value={formData.briefExpertise} onChange={handleChange} rows="4"
                         placeholder="Describe your areas of expertise"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></textarea>
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm sm:text-base"></textarea>
                     </div>
                   </div>
                 )}
@@ -808,76 +761,82 @@ export default function FacultyForm() {
                 )}
 
                 {/* Navigation Buttons */}
-                <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-                  <button 
-                    type="button" 
-                    onClick={handlePrevious} 
-                    disabled={currentStep === 1}
-                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-8 pt-6 border-t border-gray-200">
+                  <button type="button" onClick={handlePrevious} disabled={currentStep === 1}
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/>
                     </svg>
                     Previous
                   </button>
 
-                  {currentStep < totalSteps ? (
-                    <button 
-                      type="button"  
-                      onClick={handleNext}
-                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all flex items-center gap-2"
-                    >
-                      Next Step ({currentStep}/{totalSteps})
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
-                      </svg>
-                    </button>
-                  ) : (
-                    <button 
-                      type="button" 
-                      disabled={loading}
-                      onClick={() => {
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    {currentStep < totalSteps && (
+                      <button type="button" onClick={handleUpdateCurrentStep} disabled={updating}
+                        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base">
+                        {updating ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4 sm:h-5 sm:h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Update & Next
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {currentStep < totalSteps ? (
+                      <button type="button" onClick={handleNext}
+                        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all flex items-center justify-center gap-2 text-sm sm:text-base">
+                        Next Step ({currentStep}/{totalSteps})
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                      </button>
+                    ) : (
+                      <button type="button" disabled={loading} onClick={() => {
                         toast((t) => (
                           <div>
                             <p className="font-medium mb-2">Ready to submit?</p>
                             <p className="text-sm text-gray-600 mb-3">Make sure all information is correct.</p>
                             <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  toast.dismiss(t.id)
-                                  handleSubmit()
-                                }}
-                                className="px-3 py-1 bg-green-600 text-white rounded text-sm"
-                              >
+                              <button onClick={() => { toast.dismiss(t.id); handleSubmit() }}
+                                className="px-3 py-1 bg-green-600 text-white rounded text-sm">
                                 Yes, Submit
                               </button>
-                              <button
-                                onClick={() => toast.dismiss(t.id)}
-                                className="px-3 py-1 bg-gray-200 text-gray-800 rounded text-sm"
-                              >
+                              <button onClick={() => toast.dismiss(t.id)}
+                                className="px-3 py-1 bg-gray-200 text-gray-800 rounded text-sm">
                                 Review Again
                               </button>
                             </div>
                           </div>
                         ), { duration: 8000 })
                       }}
-                      className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                    >
-                      {loading ? (
-                        <span className="flex items-center gap-2">
-                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Submitting...
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          ✅ {isEditMode ? 'Update' : 'Submit'} Complete Profile
-                        </span>
-                      )}
-                    </button>
-                  )}
+                        className="w-full sm:w-auto px-6 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm sm:text-base">
+                        {loading ? (
+                          <span className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4 sm:h-5 sm:h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Submitting...
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            ✅ {isEditMode ? 'Update' : 'Submit'} Complete Profile
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             </div>
