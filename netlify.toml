@@ -1,0 +1,15 @@
+[build]
+  # This is the base directory for the build command.
+  base = "frontend/"
+  # This command will be run to build your frontend.
+  command = "npm run build"
+  # This is the directory that contains the built frontend assets.
+  publish = "frontend/dist"
+  # This is the directory that contains your serverless functions.
+  functions = "backend/functions/"
+
+[[redirects]]
+  # Proxy requests to the backend functions
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
