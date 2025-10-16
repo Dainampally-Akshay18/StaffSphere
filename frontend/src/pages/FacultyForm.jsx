@@ -42,11 +42,12 @@ export default function FacultyForm() {
     }
     return {
       // Faculty Profile fields
-      title: '', fullName: '', firstName: '', lastName: '', dateOfBirth: '', gender: '',
+      title: '', firstName: '', lastName: '', dateOfBirth: '', gender: '',
       mobileNumber: '', email: '', address: '', district: '', state: '', pinNo: '',
       designation: '', department: '', school: '', organisation: '', organisationType: '',
       organisationUrl: '', workingFromMonth: '', workingFromYear: '',
       wosSubjectCode: '', wosSubject: '', expertiseCode: '', expertise: '', briefExpertise: '',
+      orcidId: '', researcherId: '', scopusId: '', googleScholarId: '', microsoftAcademicId: '',
       
       // Personal Details table fields
       ugSpecialization: '', pgSpecialization: '', phdSpecialization: '', phdCompletedYear: '',
@@ -126,7 +127,6 @@ export default function FacultyForm() {
         setFormData({
           // From faculty_profile
           title: facultyData.title || '',
-          fullName: facultyData.full_name || '',
           firstName: facultyData.first_name || '',
           lastName: facultyData.last_name || '',
           dateOfBirth: facultyData.date_of_birth || '',
@@ -150,6 +150,11 @@ export default function FacultyForm() {
           expertiseCode: facultyData.expertise_code || '',
           expertise: facultyData.expertise || '',
           briefExpertise: facultyData.brief_expertise || '',
+          orcidId: facultyData.orcid_id || '',
+          researcherId: facultyData.researcher_id || '',
+          scopusId: facultyData.scopus_id || '',
+          googleScholarId: facultyData.google_scholar_id || '',
+          microsoftAcademicId: facultyData.microsoft_academic_id || '',
           
           // From personal_details table
           ugSpecialization: personalData?.ug_specialization || '',
@@ -273,11 +278,10 @@ export default function FacultyForm() {
     }
   }
 
-  // Build faculty profile payload
+  // Build faculty profile payload - FIXED (no full_name)
   const buildFacultyProfilePayload = () => {
     return {
       title: formData.title || null,
-      full_name: formData.fullName || null,
       first_name: formData.firstName || null,
       last_name: formData.lastName || null,
       date_of_birth: formData.dateOfBirth || null,
@@ -301,6 +305,12 @@ export default function FacultyForm() {
       expertise_code: formData.expertiseCode || null,
       expertise: formData.expertise || null,
       brief_expertise: formData.briefExpertise || null,
+      orcid_id: formData.orcidId || null,
+      researcher_id: formData.researcherId || null,
+      scopus_id: formData.scopusId || null,
+      google_scholar_id: formData.googleScholarId || null,
+      microsoft_academic_id: formData.microsoftAcademicId || null,
+      vidwan_id: formData.vidwanId || null,
     }
   }
 
@@ -365,7 +375,6 @@ export default function FacultyForm() {
       const personalDetailsPayload = buildPersonalDetailsPayload(currentFacultyId)
       
       if (personalDetailsId) {
-        // Update existing personal details
         const { error } = await supabase
           .from('personal_details')
           .update({
@@ -376,7 +385,6 @@ export default function FacultyForm() {
         
         if (error) throw error
       } else {
-        // Insert new personal details
         const { data, error } = await supabase
           .from('personal_details')
           .insert([personalDetailsPayload])
@@ -611,7 +619,6 @@ export default function FacultyForm() {
               </div>
             )}
 
-            {/* Progress Stepper and Form - keeping existing UI structure */}
             <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 overflow-x-auto">
               <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-4 min-w-max sm:min-w-0">
                 {steps.map((step) => (

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 
 export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
   const [faculty, setFaculty] = useState(null)
+  const [personalDetails, setPersonalDetails] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('personal')
 
@@ -16,7 +17,7 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
   const loadFacultyDetails = async () => {
     setLoading(true)
     try {
-      // Load faculty profile with ALL fields
+      // Load faculty profile
       const { data: facultyData, error: facultyError } = await supabase
         .from('faculty_profile')
         .select('*')
@@ -25,7 +26,15 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
 
       if (facultyError) throw facultyError
 
-      console.log('Faculty Data Loaded:', facultyData) // Debug log
+      // Load personal details from separate table
+      const { data: personalData, error: personalError } = await supabase
+        .from('personal_details')
+        .select('*')
+        .eq('faculty_id', facultyId)
+        .single()
+
+      console.log('Faculty Data:', facultyData)
+      console.log('Personal Details Data:', personalData)
 
       // Load all related data
       const [journals, conferences, books, awards, patents, certs] = await Promise.all([
@@ -37,7 +46,9 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
         supabase.from('online_certifications').select('*').eq('faculty_id', facultyId)
       ])
 
-      setFaculty({
+      setFaculty(facultyData)
+      setPersonalDetails(personalData)
+      setFaculty(prev => ({
         ...facultyData,
         journals: journals.data || [],
         conferences: conferences.data || [],
@@ -45,7 +56,7 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
         awards: awards.data || [],
         patents: patents.data || [],
         certifications: certs.data || []
-      })
+      }))
     } catch (error) {
       console.error('Error loading faculty details:', error)
       toast.error('Failed to load faculty details')
@@ -67,10 +78,8 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose}></div>
       
-      {/* Modal */}
       <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
         <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
@@ -86,10 +95,7 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
                 <p className="text-xs sm:text-sm text-blue-100 truncate">{faculty?.designation} - {faculty?.department}</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1.5 sm:p-2 transition-colors flex-shrink-0"
-            >
+            <button onClick={onClose} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1.5 sm:p-2 transition-colors flex-shrink-0">
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -102,19 +108,14 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
             </div>
           ) : (
             <>
-              {/* Tabs - Mobile Responsive */}
+              {/* Tabs */}
               <div className="border-b border-gray-200 px-2 sm:px-6 bg-white flex-shrink-0">
                 <div className="flex gap-1 sm:gap-4 overflow-x-auto hide-scrollbar">
                   {tabs.map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                       className={`py-2 sm:py-3 px-2 sm:px-4 font-medium text-xs sm:text-sm border-b-2 transition-colors whitespace-nowrap flex items-center gap-1 sm:gap-2 ${
-                        activeTab === tab.id
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
+                        activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}>
                       <span className="text-sm sm:text-base">{tab.icon}</span>
                       <span className="hidden sm:inline">{tab.label}</span>
                       <span className="sm:hidden">{tab.label.substring(0, 4)}</span>
@@ -123,14 +124,13 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Content - Scrollable */}
+              {/* Content */}
               <div className="p-3 sm:p-6 overflow-y-auto flex-1">
-                {/* Personal Information Tab */}
                 {activeTab === 'personal' && (
                   <div className="space-y-4 sm:space-y-6">
                     <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">Personal Details</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-                      <InfoCard label="Full Name" value={faculty?.full_name || `${faculty?.first_name} ${faculty?.last_name}`} />
+                      <InfoCard label="Full Name" value={`${faculty?.first_name || ''} ${faculty?.last_name || ''}`.trim() || 'N/A'} />
                       <InfoCard label="Email" value={faculty?.email} />
                       <InfoCard label="Mobile" value={faculty?.mobile_number} />
                       <InfoCard label="Date of Birth" value={faculty?.date_of_birth} />
@@ -143,43 +143,41 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
                   </div>
                 )}
 
-                {/* Academic Tab - FIXED */}
                 {activeTab === 'academic' && (
                   <div className="space-y-4 sm:space-y-6">
                     <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">Academic Qualifications</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-                      <InfoCard label="UG Specialization" value={faculty?.ug_specialization} />
-                      <InfoCard label="PG Specialization" value={faculty?.pg_specialization} />
-                      <InfoCard label="PhD Specialization" value={faculty?.phd_specialization} />
-                      <InfoCard label="PhD Completion Year" value={faculty?.phd_completed_year} />
-                      <InfoCard label="PDF Specialization" value={faculty?.pdf_specialization} className="sm:col-span-2" />
-                      <InfoCard label="Guideship Details" value={faculty?.guideship_details} className="sm:col-span-2" />
-                      <InfoCard label="Pursuing PhD Details" value={faculty?.pursuing_phd_details} className="sm:col-span-2" />
-                      <InfoCard label="Funded Projects" value={faculty?.funded_projects} className="sm:col-span-2" />
+                      <InfoCard label="UG Specialization" value={personalDetails?.ug_specialization} />
+                      <InfoCard label="PG Specialization" value={personalDetails?.pg_specialization} />
+                      <InfoCard label="PhD Specialization" value={personalDetails?.phd_specialization} />
+                      <InfoCard label="PhD Completion Year" value={personalDetails?.phd_completed_year} />
+                      <InfoCard label="PDF Specialization" value={personalDetails?.pdf_specialization} className="sm:col-span-2" />
+                      <InfoCard label="Guideship Details" value={personalDetails?.guideship_details} className="sm:col-span-2" />
+                      <InfoCard label="Pursuing PhD Details" value={personalDetails?.pursuing_phd_details} className="sm:col-span-2" />
+                      <InfoCard label="Funded Projects" value={personalDetails?.funded_projects} className="sm:col-span-2" />
                     </div>
 
                     <div className="border-t pt-4 sm:pt-6 mt-4 sm:mt-6">
                       <h4 className="text-sm sm:text-base font-bold text-gray-900 mb-3 sm:mb-4">Professional Experience</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-                        <InfoCard label="Total Experience (Years)" value={faculty?.experience_years} />
-                        <InfoCard label="Editorial Memberships" value={faculty?.editorial_member} />
-                        <InfoCard label="Professional Body Memberships" value={faculty?.professional_body_memberships} className="sm:col-span-2" />
+                        <InfoCard label="Total Experience (Years)" value={personalDetails?.experience_years} />
+                        <InfoCard label="Editorial Memberships" value={personalDetails?.editorial_member} />
+                        <InfoCard label="Professional Body Memberships" value={personalDetails?.professional_body_memberships} className="sm:col-span-2" />
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Research Tab */}
                 {activeTab === 'research' && (
                   <div className="space-y-4 sm:space-y-6">
                     <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">Research Identifiers</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-                      <InfoCard label="ORCID ID" value={faculty?.orcid_id} isLink />
-                      <InfoCard label="Scopus ID" value={faculty?.scopus_id} isLink />
-                      <InfoCard label="Google Scholar" value={faculty?.google_scholar_id} isLink />
-                      <InfoCard label="Researcher ID" value={faculty?.researcher_id} isLink />
-                      <InfoCard label="Vidwan ID" value={faculty?.vidwan_id} />
-                      <InfoCard label="CMRIT IRINS Profile" value={faculty?.cmrit_irins_profile_link} isLink />
+                      <InfoCard label="ORCID ID" value={personalDetails?.orcid_link} isLink />
+                      <InfoCard label="Scopus ID" value={personalDetails?.scopus_link} isLink />
+                      <InfoCard label="Google Scholar" value={personalDetails?.google_scholar_link} isLink />
+                      <InfoCard label="Researcher ID" value={personalDetails?.researcher_link} isLink />
+                      <InfoCard label="Vidwan ID" value={personalDetails?.vidwan_id} />
+                      <InfoCard label="CMRIT IRINS Profile" value={personalDetails?.cmrit_irins_link} isLink />
                     </div>
                     <div className="border-t pt-4 sm:pt-6 mt-4 sm:mt-6">
                       <h4 className="text-sm sm:text-base font-bold text-gray-900 mb-3 sm:mb-4">Expertise</h4>
@@ -189,7 +187,6 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
                   </div>
                 )}
 
-                {/* Publications Tab */}
                 {activeTab === 'publications' && (
                   <div className="space-y-4 sm:space-y-6">
                     <Section title="Journal Publications" count={faculty?.journals?.length}>
@@ -212,7 +209,6 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
                   </div>
                 )}
 
-                {/* Awards Tab */}
                 {activeTab === 'awards' && (
                   <div className="space-y-4 sm:space-y-6">
                     <Section title="Awards & Recognition" count={faculty?.awards?.length}>
@@ -229,7 +225,6 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
                   </div>
                 )}
 
-                {/* Certifications Tab */}
                 {activeTab === 'certifications' && (
                   <div className="space-y-4 sm:space-y-6">
                     <Section title="Online Certifications" count={faculty?.certifications?.length}>
@@ -246,19 +241,14 @@ export default function FacultyDetailModal({ facultyId, isOpen, onClose }) {
       </div>
 
       <style jsx>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </div>
   )
 }
 
-// Helper Components - Mobile Responsive
+// Helper Components
 const InfoCard = ({ label, value, isLink, className = '' }) => (
   <div className={`${className}`}>
     <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">{label}</p>
