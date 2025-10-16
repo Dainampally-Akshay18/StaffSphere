@@ -1,6 +1,4 @@
 [build]
-  # This is the base directory for the build command.
-  base = "frontend/"
   # This command will be run to build your frontend.
   command = "npm run build"
   # This is the directory that contains the built frontend assets.
