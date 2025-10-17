@@ -5,6 +5,8 @@ import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import FacultyForm from './pages/FacultyForm'
 import FacultyList from './pages/FacultyList'
@@ -15,26 +17,22 @@ function AppLayout({ children }) {
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   
-  const publicRoutes = ['/login', '/signup']
+  // ✅ Updated to include forgot-password and reset-password as public routes
+  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password']
   const isPublicRoute = publicRoutes.includes(location.pathname)
 
-  // ✅ LISTEN FOR AUTH STATE CHANGES
   useEffect(() => {
     let mounted = true
     
-    // Check current user immediately
     const checkUser = async () => {
-      console.log('🔍 Checking authentication...')
       try {
         const currentUser = await authService.getCurrentUser()
-        console.log('✅ User authenticated:', currentUser?.email)
         if (mounted && currentUser) {
           setUser(currentUser)
         } else if (mounted) {
           setUser(null)
         }
       } catch (error) {
-        console.log('❌ No user:', error.message)
         if (mounted) {
           setUser(null)
         }
@@ -47,16 +45,12 @@ function AppLayout({ children }) {
 
     checkUser()
 
-    // ✅ LISTEN TO AUTH STATE CHANGES (login/logout events)
+    // ✅ Listen to auth state changes (login/logout events)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔔 Auth state changed:', event, session?.user?.email)
-      
       if (mounted) {
         if (session?.user) {
-          console.log('✅ User logged in:', session.user.email)
           setUser(session.user)
         } else {
-          console.log('❌ User logged out')
           setUser(null)
         }
       }
@@ -82,16 +76,6 @@ function AppLayout({ children }) {
     setSidebarOpen(prev => !prev)
   }
 
-  console.log('🎯 RENDER STATE:', {
-    hasUser: !!user,
-    userEmail: user?.email,
-    loading,
-    sidebarOpen,
-    isPublicRoute,
-    currentPath: location.pathname,
-    willShowSidebar: !isPublicRoute && !!user
-  })
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -109,7 +93,6 @@ function AppLayout({ children }) {
       
       {user && !isPublicRoute ? (
         <>
-          {console.log('🎨 RENDERING SIDEBAR with isOpen=', sidebarOpen)}
           <Sidebar isOpen={sidebarOpen} user={user} />
           <div
             className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden transition-opacity ${
@@ -118,9 +101,7 @@ function AppLayout({ children }) {
             onClick={toggleSidebar}
           />
         </>
-      ) : (
-        console.log('❌ NOT rendering sidebar - user:', !!user, 'isPublicRoute:', isPublicRoute)
-      )}
+      ) : null}
       
       <div className={`pt-16 min-h-screen transition-all duration-300 ${user && !isPublicRoute ? 'lg:pl-64' : ''}`}>
         {children}
@@ -174,11 +155,18 @@ export default function App() {
     <Router>
       <AppLayout>
         <Routes>
+          {/* ✅ Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          
+          {/* ✅ Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/faculty/create" element={<ProtectedRoute><FacultyForm /></ProtectedRoute>} />
           <Route path="/faculty/list" element={<ProtectedRoute><FacultyList /></ProtectedRoute>} />
+          
+          {/* ✅ Default Route */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AppLayout>
