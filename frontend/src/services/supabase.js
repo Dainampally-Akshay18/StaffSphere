@@ -14,6 +14,9 @@ export const authService = {
       password,
       options: {
         data: userData, // Store additional user metadata
+        
+        // Add this line to specify the redirect path
+        emailRedirectTo: `${window.location.origin}/verified-email`, 
       },
     })
     if (error) throw error
