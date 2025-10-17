@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { authService } from './services/supabase'
+import { authService, supabase } from './services/supabase'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import Login from './pages/Login'
@@ -9,45 +9,64 @@ import Dashboard from './pages/Dashboard'
 import FacultyForm from './pages/FacultyForm'
 import FacultyList from './pages/FacultyList'
 
-// Layout wrapper
 function AppLayout({ children }) {
   const location = useLocation()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   
   const publicRoutes = ['/login', '/signup']
   const isPublicRoute = publicRoutes.includes(location.pathname)
 
+  // ✅ LISTEN FOR AUTH STATE CHANGES
   useEffect(() => {
-    checkUser()
-  }, [])
-
-  // Auto-open sidebar on desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setSidebarOpen(true)
-      } else {
-        setSidebarOpen(false)
+    let mounted = true
+    
+    // Check current user immediately
+    const checkUser = async () => {
+      console.log('🔍 Checking authentication...')
+      try {
+        const currentUser = await authService.getCurrentUser()
+        console.log('✅ User authenticated:', currentUser?.email)
+        if (mounted && currentUser) {
+          setUser(currentUser)
+        } else if (mounted) {
+          setUser(null)
+        }
+      } catch (error) {
+        console.log('❌ No user:', error.message)
+        if (mounted) {
+          setUser(null)
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
-    
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
-  const checkUser = async () => {
-    try {
-      const currentUser = await authService.getCurrentUser()
-      setUser(currentUser)
-    } catch (error) {
-      setUser(null)
-    } finally {
-      setLoading(false)
+    checkUser()
+
+    // ✅ LISTEN TO AUTH STATE CHANGES (login/logout events)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔔 Auth state changed:', event, session?.user?.email)
+      
+      if (mounted) {
+        if (session?.user) {
+          console.log('✅ User logged in:', session.user.email)
+          setUser(session.user)
+        } else {
+          console.log('❌ User logged out')
+          setUser(null)
+        }
+      }
+    })
+
+    return () => {
+      mounted = false
+      subscription?.unsubscribe()
     }
-  }
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -60,8 +79,18 @@ function AppLayout({ children }) {
   }
 
   const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
+    setSidebarOpen(prev => !prev)
   }
+
+  console.log('🎯 RENDER STATE:', {
+    hasUser: !!user,
+    userEmail: user?.email,
+    loading,
+    sidebarOpen,
+    isPublicRoute,
+    currentPath: location.pathname,
+    willShowSidebar: !isPublicRoute && !!user
+  })
 
   if (loading) {
     return (
@@ -76,22 +105,24 @@ function AppLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar - Always visible */}
       <Navbar user={user} onLogout={handleLogout} onToggleSidebar={toggleSidebar} />
       
-      {/* Sidebar - Only on authenticated routes */}
-      {!isPublicRoute && user && <Sidebar isOpen={sidebarOpen} user={user} />}
-      
-      {/* Mobile Overlay - Close sidebar when clicked */}
-      {!isPublicRoute && user && sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
-          onClick={toggleSidebar}
-        />
+      {user && !isPublicRoute ? (
+        <>
+          {console.log('🎨 RENDERING SIDEBAR with isOpen=', sidebarOpen)}
+          <Sidebar isOpen={sidebarOpen} user={user} />
+          <div
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden transition-opacity ${
+              sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            onClick={toggleSidebar}
+          />
+        </>
+      ) : (
+        console.log('❌ NOT rendering sidebar - user:', !!user, 'isPublicRoute:', isPublicRoute)
       )}
       
-      {/* Main Content Area - Adjusted for navbar and sidebar */}
-      <div className={`pt-16 min-h-screen ${!isPublicRoute && user ? 'lg:pl-64' : ''} transition-all duration-300`}>
+      <div className={`pt-16 min-h-screen transition-all duration-300 ${user && !isPublicRoute ? 'lg:pl-64' : ''}`}>
         {children}
       </div>
     </div>
@@ -103,19 +134,29 @@ function ProtectedRoute({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkAuth()
-  }, [])
-
-  const checkAuth = async () => {
-    try {
-      const currentUser = await authService.getCurrentUser()
-      setUser(currentUser)
-    } catch (error) {
-      setUser(null)
-    } finally {
-      setLoading(false)
+    let mounted = true
+    
+    const checkAuth = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser()
+        if (mounted) {
+          setUser(currentUser)
+          setLoading(false)
+        }
+      } catch (error) {
+        if (mounted) {
+          setUser(null)
+          setLoading(false)
+        }
+      }
     }
-  }
+
+    checkAuth()
+    
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   if (loading) {
     return (
