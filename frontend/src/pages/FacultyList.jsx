@@ -122,10 +122,8 @@ export default function FacultyList() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} user={user} />
 
-      <div className="lg:pl-64 transition-all duration-300">
-        <Navbar user={user} onLogout={handleLogout} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="min-h-screen bg-gray-50">
 
         <main className="p-6">
           <div className="max-w-7xl mx-auto">

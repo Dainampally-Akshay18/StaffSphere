@@ -60,17 +60,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} user={user} />
 
       {/* Main Content */}
-      <div className="lg:pl-64 transition-all duration-300">
+      <div className="min-h-screen bg-gray-50">
         {/* Navbar */}
-        <Navbar 
-          user={user} 
-          onLogout={handleLogout}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        />
-
+       
         {/* Dashboard Content */}
         <main className="p-6 space-y-6">
           {/* Welcome Card */}
