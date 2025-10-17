@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import VerifiedEmailPage from './pages/VerifiedEmailPage'
 import Dashboard from './pages/Dashboard'
 import FacultyForm from './pages/FacultyForm'
 import FacultyList from './pages/FacultyList'
@@ -17,8 +18,8 @@ function AppLayout({ children }) {
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   
-  // ✅ Updated to include forgot-password and reset-password as public routes
-  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password']
+  // ✅ Added verified-email as public route
+  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/verified-email']
   const isPublicRoute = publicRoutes.includes(location.pathname)
 
   useEffect(() => {
@@ -45,7 +46,7 @@ function AppLayout({ children }) {
 
     checkUser()
 
-    // ✅ Listen to auth state changes (login/logout events)
+    // ✅ Listen to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (mounted) {
         if (session?.user) {
@@ -160,6 +161,7 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verified-email" element={<VerifiedEmailPage />} />
           
           {/* ✅ Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
