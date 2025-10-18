@@ -18,14 +18,13 @@ function AppLayout({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  
-  // ✅ Added verified-email as public route
+
   const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/verified-email']
   const isPublicRoute = publicRoutes.includes(location.pathname)
 
   useEffect(() => {
     let mounted = true
-    
+
     const checkUser = async () => {
       try {
         const currentUser = await authService.getCurrentUser()
@@ -47,7 +46,6 @@ function AppLayout({ children }) {
 
     checkUser()
 
-    // ✅ Listen to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (mounted) {
         if (session?.user) {
@@ -80,11 +78,8 @@ function AppLayout({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -93,87 +88,40 @@ function AppLayout({ children }) {
     <div className="min-h-screen bg-gray-50">
       <Navbar user={user} onLogout={handleLogout} onToggleSidebar={toggleSidebar} />
       
-      {user && !isPublicRoute ? (
-        <>
-          <Sidebar isOpen={sidebarOpen} user={user} />
-          <div
-            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden transition-opacity ${
-              sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-            onClick={toggleSidebar}
-          />
-        </>
-      ) : null}
-      
-      <div className={`pt-16 min-h-screen transition-all duration-300 ${user && !isPublicRoute ? 'lg:pl-64' : ''}`}>
-        {children}
+      <div className="flex">
+        {!isPublicRoute && user && (
+          <Sidebar isOpen={sidebarOpen} />
+        )}
+        
+        {/* ✅ FIXED: Removed pt-20, changed to pt-0 for no spacing */}
+        <main className={`flex-1 ${!isPublicRoute && user && sidebarOpen ? 'lg:ml-64' : ''}`}>
+          {children}
+        </main>
       </div>
     </div>
   )
 }
 
-function ProtectedRoute({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let mounted = true
-    
-    const checkAuth = async () => {
-      try {
-        const currentUser = await authService.getCurrentUser()
-        if (mounted) {
-          setUser(currentUser)
-          setLoading(false)
-        }
-      } catch (error) {
-        if (mounted) {
-          setUser(null)
-          setLoading(false)
-        }
-      }
-    }
-
-    checkAuth()
-    
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div>
-      </div>
-    )
-  }
-
-  return user ? children : <Navigate to="/login" replace />
-}
-
-export default function App() {
+function App() {
   return (
     <Router>
       <AppLayout>
         <Routes>
-          {/* ✅ Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verified-email" element={<VerifiedEmailPage />} />
           <Route path="/about-us" element={<AboutUs />} />
-          
-          {/* ✅ Protected Routes */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/faculty/create" element={<ProtectedRoute><FacultyForm /></ProtectedRoute>} />
-          <Route path="/faculty/list" element={<ProtectedRoute><FacultyList /></ProtectedRoute>} />
-          
-          {/* ✅ Default Route */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/faculty/create" element={<FacultyForm />} />
+          <Route path="/faculty/edit/:id" element={<FacultyForm />} />
+          <Route path="/faculty/list" element={<FacultyList />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </AppLayout>
     </Router>
   )
 }
+
+export default App
