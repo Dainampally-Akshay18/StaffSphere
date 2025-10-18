@@ -11,6 +11,7 @@ import VerifiedEmailPage from './pages/VerifiedEmailPage'
 import Dashboard from './pages/Dashboard'
 import FacultyForm from './pages/FacultyForm'
 import FacultyList from './pages/FacultyList'
+import AboutUs from './pages/AboutUs'
 
 function AppLayout({ children }) {
   const location = useLocation()
@@ -162,6 +163,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verified-email" element={<VerifiedEmailPage />} />
+          <Route path="/about-us" element={<AboutUs />} />
           
           {/* ✅ Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
