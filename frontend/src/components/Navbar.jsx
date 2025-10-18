@@ -1,81 +1,173 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 
 export default function Navbar({ user, onLogout, onToggleSidebar }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  // Add scroll effect for navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10
+      setScrolled(isScrolled)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const handleLogout = async () => {
     if (onLogout) {
       await onLogout()
     }
     navigate('/login')
+    setMobileMenuOpen(false)
   }
 
-  const isPublicRoute = ['/login', '/signup'].includes(location.pathname)
+  const isPublicRoute = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(location.pathname)
 
   return (
-    <nav className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-2xl fixed w-full z-50 top-0 border-b border-slate-700">
-      <div className="max-w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <nav className={`bg-gray-900/95 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50 transition-all duration-300 ${
+      scrolled ? 'shadow-2xl shadow-blue-900/20' : 'shadow-lg shadow-blue-900/10'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20">
           {/* Left Section - Menu Toggle & Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {/* Hamburger Menu - Only show when user is logged in and not on public routes */}
             {!isPublicRoute && user && (
               <button
                 onClick={onToggleSidebar}
-                className="lg:hidden p-2 rounded-lg text-gray-300 hover:bg-slate-700 transition-colors"
+                className="p-3 rounded-2xl hover:bg-gradient-to-r from-blue-500/10 to-indigo-500/10 transition-all duration-200 lg:hidden border border-gray-700 hover:border-blue-500/30 group"
                 aria-label="Toggle sidebar"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
+                <svg className="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
               </button>
             )}
-            
-            <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-2 rounded-lg shadow-lg">
-                <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
-                </svg>
+
+            {/* Enhanced Logo */}
+            <Link 
+              to={user ? '/dashboard' : '/'} 
+              className="flex items-center gap-3 group"
+            >
+              <div className="relative">
+                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:scale-105">
+                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                  </svg>
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300 -z-10"></div>
               </div>
-              <span className="text-lg sm:text-xl font-bold text-white">Faculty Portal</span>
+              <div className="flex flex-col">
+                <span className="font-bold text-xl bg-gradient-to-r from-gray-100 to-gray-300 bg-clip-text text-transparent">
+                  CMRIT Faculty
+                </span>
+                <span className="text-xs text-gray-400 font-medium">Academic Excellence</span>
+              </div>
             </Link>
           </div>
 
-          {/* Right Section - User Info or Auth Buttons */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Right Section - Desktop */}
+          <div className="hidden md:flex items-center gap-4">
             <Link
-                  to="/about-us"
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 sm:px-5 py-2 rounded-lg font-semibold border border-slate-600 transition-colors text-sm sm:text-base"
-                >
-                  About Developer
-                </Link>
-            {user ? (
-              <>
-                
+              to="/about-us"
+              className="px-5 py-2.5 rounded-xl text-gray-300 hover:text-white font-medium hover:bg-gray-800/50 transition-all duration-200 border border-transparent hover:border-gray-700 group relative"
+            >
+              About Developer
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400 group-hover:w-full transition-all duration-300"></span>
+            </Link>
 
-                {/* Logout Button - VISIBLE */}
-                <button
-                  onClick={handleLogout}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-lg"
-                >
-                  <span className="text-sm sm:text-base">Logout</span>
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                  </svg>
-                </button>
-              </>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:shadow-red-500/20 transform hover:scale-105 flex items-center gap-2 group"
+              >
+                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+              </button>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Link
                   to="/login"
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-3 sm:px-5 py-2 rounded-lg font-semibold border border-slate-600 transition-colors text-sm sm:text-base"
+                  className="px-6 py-2.5 rounded-xl border-2 border-gray-600 text-gray-300 hover:border-blue-500 hover:text-blue-400 transition-all duration-200 font-semibold hover:shadow-md hover:shadow-blue-500/10"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-5 py-2 rounded-lg font-semibold transition-colors shadow-lg text-sm sm:text-base"
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transform hover:scale-105"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Enhanced Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-3 rounded-2xl hover:bg-gray-800/50 transition-all duration-200 border border-gray-700 hover:border-gray-600 group"
+            aria-label="Toggle mobile menu"
+          >
+            <div className="relative w-6 h-6">
+              {mobileMenuOpen ? (
+                <svg className="w-6 h-6 text-gray-300 group-hover:text-blue-400 transition-all duration-300 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-gray-300 group-hover:text-blue-400 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+              )}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Enhanced Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-gray-900/95 backdrop-blur-xl border-t border-gray-800 shadow-2xl shadow-blue-900/20 animate-in slide-in-from-top duration-300">
+          <div className="px-4 py-4 space-y-3">
+            <Link
+              to="/about-us"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-5 py-3.5 rounded-xl text-gray-300 hover:text-white font-medium hover:bg-gray-800/50 transition-all duration-200 border border-gray-800 hover:border-gray-700 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full"></div>
+                About Developer
+              </div>
+            </Link>
+
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-5 py-3.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-red-500/20 flex items-center gap-3 group"
+              >
+                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+              </button>
+            ) : (
+              <div className="space-y-3 pt-2">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full text-center px-5 py-3.5 rounded-xl border-2 border-gray-600 text-gray-300 hover:border-blue-500 hover:text-blue-400 transition-all duration-200 font-semibold hover:shadow-md hover:shadow-blue-500/10"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full text-center px-5 py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-blue-500/25 transform hover:scale-105"
                 >
                   Sign Up
                 </Link>
@@ -83,7 +175,7 @@ export default function Navbar({ user, onLogout, onToggleSidebar }) {
             )}
           </div>
         </div>
-      </div>
+      )}
     </nav>
   )
 }
