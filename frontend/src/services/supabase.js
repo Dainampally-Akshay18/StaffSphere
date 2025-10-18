@@ -5,9 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Auth helper functions
 export const authService = {
-  // Sign up new user
   async signUp(email, password, userData = {}) {
     const { data, error } = await supabase.auth.signUp({
       email,
